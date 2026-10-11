@@ -9,6 +9,19 @@ import BuildProgress from "@/components/BuildProgress";
 import PreviewPane from "@/components/PreviewPane";
 import PublishPanel from "@/components/PublishPanel";
 import SettingsDrawer from "@/components/SettingsDrawer";
+import CreditsDrawer from "@/components/CreditsDrawer";
+import {
+  chargeCredits,
+  COST_ESTIMATE,
+  estimateDuration,
+  formatDuration,
+  loadCredits,
+  recordDuration,
+  recordFailure,
+  topUpCredits,
+  type CostKind,
+  type CreditsState,
+} from "@/lib/credits";
 import {
   extractHtml,
   parseProposal,
@@ -25,6 +38,7 @@ import {
 import {
   DEMO_HTML,
   DEMO_MESSAGES,
+  DEMO_QA,
   DEMO_SPEC,
   DEMO_STYLES,
   DEMO_STYLE_ID,
@@ -40,6 +54,7 @@ import {
 import type {
   ChatMessage,
   PublishState,
+  QaReport,
   SelectedElement,
   ServicesState,
   Settings,
@@ -49,6 +64,18 @@ import type {
   Suggestion,
   Version,
 } from "@/lib/types";
+
+/** 构建失败的现场：原因 + 完整参数，支持一键原样重试 */
+interface BuildFailure {
+  reason: string;
+  mode: "build" | "revise" | "patch";
+  spec: Spec;
+  style: StyleOption;
+  baseHtml: string;
+  instruction: string;
+  element: SelectedElement | null;
+  label: string;
+}
 
 const STEPS: { key: Stage; label: string }[] = [
   { key: "discover", label: "① 需求与方案" },
@@ -98,6 +125,16 @@ export default function Studio({ projectId }: { projectId: string }) {
   const [patchLabel, setPatchLabel] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [suggestLoading, setSuggestLoading] = useState(false);
+  const [buildEtaMs, setBuildEtaMs] = useState(90_000);
+  const [buildCost, setBuildCost] = useState(COST_ESTIMATE.build);
+  const [patchEtaMs, setPatchEtaMs] = useState(35_000);
+  const [failure, setFailure] = useState<BuildFailure | null>(null);
+
+  // 积分账本与体检
+  const [credits, setCredits] = useState<CreditsState>({ balance: 0, entries: [] });
+  const [creditsOpen, setCreditsOpen] = useState(false);
+  const [qaReport, setQaReport] = useState<QaReport | null>(null);
+  const [qaLoading, setQaLoading] = useState(false);
 
   // 阶段五：平台服务与发布
   const [services, setServices] = useState<ServicesState>(defaultServices);
@@ -115,6 +152,7 @@ export default function Studio({ projectId }: { projectId: string }) {
     } catch {
       /* ignore */
     }
+    setCredits(loadCredits());
     const meta = getMeta(projectId);
     const data = loadProjectData(projectId);
     if (!meta || !data) {
@@ -232,6 +270,41 @@ export default function Studio({ projectId }: { projectId: string }) {
     });
   }
 
+  /** 把历史版本恢复为最新版本（免费，当前最新版仍保留在历史里） */
+  function restoreVersion(index: number) {
+    const v = versions[index];
+    if (!v) return;
+    pushVersion(v.html, `恢复自 v${index + 1}`);
+    showToast(`已把 v${index + 1} 恢复为最新版本`);
+  }
+
+  /** 方案推荐的平台能力：确认方案时自动开通，并告知用户 */
+  function applyRecommendedServices(forSpec: Spec) {
+    const recs = (forSpec.recommendedServices || []).filter((r) =>
+      PLATFORM_SERVICES.some((p) => p.id === r.id)
+    );
+    const newly = recs.filter((r) => !services.enabled[r.id]);
+    if (!newly.length) return;
+    setServices((s) => {
+      const enabled = { ...s.enabled };
+      newly.forEach((r) => {
+        enabled[r.id] = true;
+        // 依赖关系与手动开通保持一致
+        if (r.id === "auth") enabled.cloud = true;
+        if (r.id === "collab") {
+          enabled.auth = true;
+          enabled.cloud = true;
+        }
+      });
+      return { ...s, enabled };
+    });
+    const names = newly
+      .map((r) => PLATFORM_SERVICES.find((p) => p.id === r.id)?.label)
+      .filter(Boolean)
+      .join("、");
+    showToast(`已按方案自动开通：${names}（原因见方案卡「平台能力」，可随时关闭）`);
+  }
+
   // ---------- 阶段一：与产品经理对话 ----------
 
   async function sendToPM(text: string) {
@@ -278,6 +351,7 @@ export default function Studio({ projectId }: { projectId: string }) {
     };
     setSpec(finalSpec);
     setPendingSpec(null);
+    applyRecommendedServices(finalSpec);
     // 已有成品时确认新方案 = 在现有产品上改造，而不是从视觉阶段重来
     if (versions.length && style) {
       runBuild("revise", finalSpec, style, html, "按更新后的产品方案调整", null, "方案更新");
@@ -313,6 +387,7 @@ export default function Studio({ projectId }: { projectId: string }) {
     setSpec(finalSpec);
     setPendingSpec(null);
     setSpecReviewOpen(false);
+    applyRecommendedServices(finalSpec);
     runBuild("revise", finalSpec, style!, html, "按更新后的产品方案调整", null, "方案更新");
   }
 
@@ -322,6 +397,7 @@ export default function Studio({ projectId }: { projectId: string }) {
     setStylesLoading(true);
     setStylesError(null);
     setStyleId(null);
+    const start = Date.now();
     try {
       const data = await postJson<{ styles: StyleOption[] }>(
         "/api/styles",
@@ -329,8 +405,11 @@ export default function Studio({ projectId }: { projectId: string }) {
         headers()
       );
       setStyles(data.styles || []);
+      recordDuration("styles", Date.now() - start);
+      setCredits(chargeCredits("styles", tweak ? `换一批：${tweak.slice(0, 12)}` : "三个视觉方向"));
     } catch (e: any) {
       setStylesError(e.message);
+      setCredits(recordFailure("styles", "视觉方向生成失败"));
     } finally {
       setStylesLoading(false);
     }
@@ -369,13 +448,19 @@ export default function Studio({ projectId }: { projectId: string }) {
     label: string
   ) {
     const isFullBuild = mode !== "patch";
+    const kind: CostKind = mode;
+    const start = Date.now();
     if (isFullBuild) {
       setStage("building");
       setBuildChars(0);
+      setBuildEtaMs(estimateDuration(kind));
+      setBuildCost(COST_ESTIMATE[kind]);
     } else {
       setPatching(true);
       setPatchLabel(`正在修改：${label}`);
+      setPatchEtaMs(estimateDuration("patch"));
     }
+    setFailure(null);
     try {
       const full = await streamText(
         "/api/build",
@@ -395,17 +480,37 @@ export default function Studio({ projectId }: { projectId: string }) {
         }
       );
       const newHtml = extractHtml(full);
-      if (!newHtml) throw new Error("生成结果不完整，请重试");
+      if (!newHtml) throw new Error("生成结果不完整，可能是网络中断，可以直接重试");
       pushVersion(newHtml, label);
       setStage("preview");
+      recordDuration(kind, Date.now() - start);
+      setCredits(chargeCredits(kind, label, newHtml.length));
       fetchSuggestions(forSpec, label);
     } catch (e: any) {
-      showToast(`制作失败：${e.message}`);
+      setCredits(recordFailure(kind, label));
       if (isFullBuild) setStage(versions.length ? "preview" : "style");
+      // 保留完整现场：失败原因 + 原始修改要求，支持一键重试
+      setFailure({
+        reason: e.message || "未知原因",
+        mode,
+        spec: forSpec,
+        style: forStyle,
+        baseHtml,
+        instruction,
+        element,
+        label,
+      });
     } finally {
       setPatching(false);
       setPatchLabel("");
     }
+  }
+
+  function retryFailure() {
+    if (!failure) return;
+    const f = failure;
+    setFailure(null);
+    runBuild(f.mode, f.spec, f.style, f.baseHtml, f.instruction, f.element, f.label);
   }
 
   async function fetchSuggestions(forSpec: Spec, latestLabel: string) {
@@ -441,6 +546,53 @@ export default function Studio({ projectId }: { projectId: string }) {
   function handleSuggestion(s: Suggestion) {
     if (!spec || !style) return;
     runBuild("patch", spec, style, html, s.instruction, null, s.label);
+  }
+
+  /** 修改清单：多处小改合并成一次构建，只按一次计费 */
+  function handleBatchEdit(instructions: string[]) {
+    if (!spec || !style || !instructions.length) return;
+    const joined = instructions.map((t, i) => `修改点 ${i + 1}：${t}`).join("\n");
+    runBuild("patch", spec, style, html, joined, null, `一次修改 ${instructions.length} 处`);
+  }
+
+  // ---------- 产品体检 ----------
+
+  async function runQa() {
+    if (!spec || !html || qaLoading) return;
+    setQaLoading(true);
+    const start = Date.now();
+    try {
+      const data = await postJson<{ summary: string; issues: QaReport["issues"] }>(
+        "/api/qa",
+        { html, spec, model: settings.chatModel },
+        headers()
+      );
+      setQaReport({ summary: data.summary, issues: data.issues || [], ts: Date.now() });
+      recordDuration("qa", Date.now() - start);
+      setCredits(chargeCredits("qa", `体检 v${currentVersion + 1}`));
+    } catch (e: any) {
+      setCredits(recordFailure("qa", `体检 v${currentVersion + 1}`));
+      showToast(`体检失败：${e.message}`);
+    } finally {
+      setQaLoading(false);
+    }
+  }
+
+  /** 修复体检问题：一条或多条合并成一次快速修改 */
+  function fixQaIssues(fixes: string[]) {
+    if (!spec || !style || !fixes.length) return;
+    setQaReport(null);
+    const joined =
+      fixes.length === 1 ? fixes[0] : fixes.map((f, i) => `修改点 ${i + 1}：${f}`).join("\n");
+    runBuild(
+      "patch",
+      spec,
+      style,
+      html,
+      joined,
+      null,
+      fixes.length === 1 ? "体检修复" : `体检修复 ${fixes.length} 项`
+    );
   }
 
   /** 发布阶段的能力开关：晚开通需要对产品做一次改造把能力集成进去；关闭则提示下次移除 */
@@ -505,6 +657,7 @@ export default function Studio({ projectId }: { projectId: string }) {
     setCurrentVersion(0);
     setSuggestions(DEMO_SUGGESTIONS);
     setSuggestLoading(false);
+    setQaReport({ ...DEMO_QA, ts: Date.now() });
     setStage("preview");
     showToast("已载入演示成品：试试「✎ 编辑模式」点击页面改文字，或切换手机视图");
   }
@@ -597,9 +750,18 @@ export default function Studio({ projectId }: { projectId: string }) {
             );
           })}
         </nav>
-        <button className="btn ghost" onClick={() => setSettingsOpen(true)}>
-          ⚙ 设置
-        </button>
+        <div className="topbar-actions">
+          <button
+            className="btn ghost credits-btn"
+            title="积分余额 · 点击查看计费规则与消耗明细"
+            onClick={() => setCreditsOpen(true)}
+          >
+            ⚡ {credits.balance}
+          </button>
+          <button className="btn ghost" onClick={() => setSettingsOpen(true)}>
+            ⚙ 设置
+          </button>
+        </div>
       </header>
 
       {/* 主体 */}
@@ -625,6 +787,11 @@ export default function Studio({ projectId }: { projectId: string }) {
                   onToggle={(id) => setChecklistOn((s) => ({ ...s, [id]: !(s[id] ?? true) }))}
                   onConfirm={confirmSpec}
                   confirmLabel={versions.length ? "按新方案更新产品 →" : "确认方案，进入视觉设计 →"}
+                  confirmNote={
+                    versions.length
+                      ? `预计消耗 ~${COST_ESTIMATE.revise} 积分 · 约 ${formatDuration(estimateDuration("revise"))} · 失败不扣`
+                      : `视觉设计 ~${COST_ESTIMATE.styles} 积分；选定后整体制作 ~${COST_ESTIMATE.build} 积分 · 失败不扣`
+                  }
                   services={services}
                   onServiceToggle={toggleService}
                   onAiModelChange={(m) => setServices((s) => ({ ...s, aiModel: m }))}
@@ -680,7 +847,12 @@ export default function Studio({ projectId }: { projectId: string }) {
           )}
 
           {stage === "building" && spec && (
-            <BuildProgress charCount={buildChars} productName={spec.productName} />
+            <BuildProgress
+              charCount={buildChars}
+              productName={spec.productName}
+              estimatedMs={buildEtaMs}
+              estimatedCost={buildCost}
+            />
           )}
 
           {stage === "preview" && spec && html && (
@@ -690,13 +862,20 @@ export default function Studio({ projectId }: { projectId: string }) {
               versions={versions}
               currentVersion={currentVersion}
               onRevert={setCurrentVersion}
+              onRestore={restoreVersion}
               patching={patching}
               patchLabel={patchLabel}
+              patchEtaMs={patchEtaMs}
               suggestions={suggestions}
               suggestLoading={suggestLoading}
               onSuggestion={handleSuggestion}
               onLocalTextEdit={handleLocalTextEdit}
               onAIEdit={handleAIEdit}
+              onBatchEdit={handleBatchEdit}
+              qaReport={qaReport}
+              qaLoading={qaLoading}
+              onRunQa={runQa}
+              onFixIssues={fixQaIssues}
               live={publish.status === "live"}
               onOpenPublish={() => setStage("publish")}
             />
@@ -730,6 +909,7 @@ export default function Studio({ projectId }: { projectId: string }) {
               onToggle={(id) => setChecklistOn((s) => ({ ...s, [id]: !(s[id] ?? true) }))}
               onConfirm={confirmRevisedSpec}
               confirmLabel="按新方案更新产品 →"
+              confirmNote={`预计消耗 ~${COST_ESTIMATE.revise} 积分 · 约 ${formatDuration(estimateDuration("revise"))} · 失败不扣`}
               hint="确认后工程团队会在现有产品基础上按新方案调整，你的数据不会丢。"
               services={services}
               onServiceToggle={toggleService}
@@ -737,6 +917,49 @@ export default function Studio({ projectId }: { projectId: string }) {
             />
           </div>
         </div>
+      )}
+
+      {/* 制作失败：说明原因、保留要求、支持一键重试（不扣积分） */}
+      {failure && (
+        <div className="modal-mask" onClick={() => setFailure(null)}>
+          <div className="modal fail-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <h3>😥 这次没做成</h3>
+              <button className="close-x" onClick={() => setFailure(null)}>
+                ×
+              </button>
+            </div>
+            <p className="fail-reason">
+              <b>原因：</b>
+              {failure.reason}
+            </p>
+            {failure.instruction && (
+              <p className="fail-kept">
+                你的修改要求已经保留：<em>{failure.instruction.slice(0, 120)}</em>
+              </p>
+            )}
+            <p className="fail-note">这次失败没有扣积分。点下面的按钮可以原样重试，不用重新输入。</p>
+            <div className="modal-foot">
+              <button className="btn ghost" onClick={() => setFailure(null)}>
+                先不重试
+              </button>
+              <button className="btn primary" onClick={retryFailure}>
+                ↻ 原样重试
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {creditsOpen && (
+        <CreditsDrawer
+          credits={credits}
+          onTopUp={() => {
+            setCredits(topUpCredits());
+            showToast("已到账 500 体验积分");
+          }}
+          onClose={() => setCreditsOpen(false)}
+        />
       )}
 
       {settingsOpen && (

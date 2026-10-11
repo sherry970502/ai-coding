@@ -61,6 +61,7 @@ export default function PublishPanel({
 
   const draft = versions[currentVersion];
   const isLive = publish.status === "live";
+  const isPaused = publish.status === "paused";
   const liveOutdated =
     isLive && draft && publish.liveVersionTs !== null && draft.ts !== publish.liveVersionTs;
   const visits = mockVisits(publish.publishedAt);
@@ -104,6 +105,17 @@ export default function PublishPanel({
       setPublishStep("");
       onToast(isLive ? "线上版本已更新 🎉" : "发布成功！你的产品已经在线上了 🎉");
     }, steps.length * 800 + 600);
+  }
+
+  /** 暂停访问：项目和数据都保留，访客打开链接会看到暂停提示页，随时可恢复 */
+  function pauseAccess() {
+    onPublishChange({ ...publish, status: "paused", updatedAt: Date.now() });
+    onToast("已暂停访问：访客暂时打不开链接，项目和数据都还在，随时可恢复");
+  }
+
+  function resumeAccess() {
+    onPublishChange({ ...publish, status: "live", updatedAt: Date.now() });
+    onToast("已恢复访问，链接重新可用");
   }
 
   function rollbackLive(v: Version) {
@@ -252,14 +264,16 @@ export default function PublishPanel({
         <div>
           <h2>
             发布上线
-            <span className={`live-pill ${isLive ? "on" : ""}`}>
-              {isLive ? "● 已上线" : "○ 未发布"}
+            <span className={`live-pill ${isLive ? "on" : ""} ${isPaused ? "paused" : ""}`}>
+              {isLive ? "● 已上线" : isPaused ? "⏸ 已暂停访问" : "○ 未发布"}
             </span>
           </h2>
           <p className="publish-sub">
             {isLive
               ? "产品已经在线上。继续迭代不会影响线上版本，改好后一键更新。"
-              : "把产品从预览变成真正可访问的线上产品。所有能力当前免费开放。"}
+              : isPaused
+                ? "访问已暂停：访客打开链接会看到暂停提示页。项目、数据、链接都保留，随时可恢复。"
+                : "把产品从预览变成真正可访问的线上产品。所有能力当前免费开放。"}
           </p>
         </div>
         <button className="btn ghost" onClick={onBack}>
@@ -268,7 +282,7 @@ export default function PublishPanel({
       </div>
 
       {/* 线上状态卡 */}
-      {isLive && publish.url && (
+      {(isLive || isPaused) && publish.url && (
         <div className="live-card">
           <div className="live-main">
             <div className="live-url-row">
@@ -326,6 +340,21 @@ export default function PublishPanel({
                 </div>
               </details>
             )}
+            <div className="live-actions">
+              {isLive ? (
+                <button
+                  className="btn sm ghost"
+                  title="访客暂时打不开链接；项目、数据、链接都保留"
+                  onClick={pauseAccess}
+                >
+                  ⏸ 暂停访问
+                </button>
+              ) : (
+                <button className="btn primary sm" onClick={resumeAccess}>
+                  ▶ 恢复访问
+                </button>
+              )}
+            </div>
           </div>
           <PseudoQr seed={publish.url} caption="手机扫码打开（演示二维码）" />
         </div>

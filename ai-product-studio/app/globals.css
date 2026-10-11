@@ -755,3 +755,160 @@ kbd {
   .live-card { flex-direction: column; }
   .publish-head { flex-direction: column; }
 }
+
+/* ===================== v0.3：透明、可控、能恢复 ===================== */
+
+/* 顶栏积分 */
+.topbar-actions { display: flex; align-items: center; gap: 8px; }
+.credits-btn { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+/* 制作进度：预估时间与费用承诺 */
+.build-eta { margin-top: 10px; font-size: 13px; color: var(--ink); font-weight: 500; }
+.build-cost-note { margin-top: 18px; font-size: 12px; color: var(--ink-2); }
+
+/* 对话附件 */
+.attach-btn { padding: 8px 10px; font-size: 15px; }
+.attach-chip-row { padding: 6px 14px 0; }
+.attach-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(41, 67, 92, 0.08); border: 1px solid var(--line);
+  border-radius: 99px; padding: 3px 10px; font-size: 12px;
+}
+.attach-chip button { border: none; background: transparent; color: var(--ink-2); font-size: 14px; }
+.attach-hint { padding: 6px 14px 0; font-size: 12px; color: var(--accent-ink); }
+
+/* 历史菜单：查看 + 恢复 */
+.history-item { display: flex; align-items: stretch; gap: 4px; border-radius: 7px; }
+.history-item.current { background: rgba(217, 93, 57, 0.09); }
+.history-item.current .history-main { color: var(--accent-ink); font-weight: 600; }
+.history-main {
+  flex: 1; display: flex; justify-content: space-between; gap: 12px;
+  border: none; background: transparent; text-align: left;
+  padding: 8px 10px; border-radius: 7px; font-size: 12.5px;
+}
+.history-main:hover { background: var(--bg); }
+.history-restore {
+  border: none; background: transparent; border-radius: 7px;
+  font-size: 12px; color: var(--primary); padding: 0 8px; white-space: nowrap;
+}
+.history-restore:hover { background: rgba(41, 67, 92, 0.1); }
+.history-tip { padding: 8px 10px 4px; font-size: 11.5px; color: var(--ink-2); border-top: 1px solid var(--line); margin-top: 4px; }
+
+/* 正在查看旧版本 */
+.old-version-banner {
+  display: flex; align-items: center; gap: 10px; justify-content: center;
+  background: rgba(232, 182, 76, 0.18); border: 1px dashed #c99a2e;
+  color: #7a5c14; border-radius: 10px; padding: 7px 14px; font-size: 12.5px;
+}
+.old-version-banner button {
+  border: 1px solid #c99a2e; background: var(--surface); color: #7a5c14;
+  border-radius: 7px; padding: 3px 10px; font-size: 12px;
+}
+.old-version-banner button:hover { background: #fdf6e4; }
+
+/* 修改清单（多处小改合并） */
+.queue-bar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: rgba(41, 67, 92, 0.06); border: 1px solid var(--line);
+  border-radius: 10px; padding: 8px 12px;
+}
+.queue-title { font-size: 12.5px; font-weight: 600; color: var(--primary); }
+.queue-chips { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.queue-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 99px; padding: 3px 10px; font-size: 12px;
+}
+.queue-chip button { border: none; background: transparent; color: var(--ink-2); font-size: 13px; }
+
+/* 体检报告 */
+.qa-panel {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 12px; box-shadow: var(--shadow); padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 10px; max-height: 320px; overflow-y: auto;
+}
+.qa-head { display: flex; align-items: center; gap: 10px; }
+.qa-head b { font-size: 13.5px; }
+.qa-summary { flex: 1; font-size: 12.5px; color: var(--ink-2); }
+.qa-clean { font-size: 13px; color: var(--ok); }
+.qa-list { display: flex; flex-direction: column; gap: 8px; }
+.qa-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px;
+}
+.qa-sev {
+  flex-shrink: 0; font-size: 11px; font-weight: 600; border-radius: 5px;
+  padding: 2px 7px; margin-top: 2px;
+}
+.qa-sev.high { background: rgba(217, 93, 57, 0.14); color: var(--accent-ink); }
+.qa-sev.medium { background: rgba(232, 182, 76, 0.22); color: #7a5c14; }
+.qa-sev.low { background: rgba(34, 32, 27, 0.07); color: var(--ink-2); }
+.qa-body { flex: 1; }
+.qa-body b { font-size: 13px; display: block; }
+.qa-body p { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+.qa-foot { display: flex; gap: 8px; align-items: center; }
+
+/* 元素编辑面板的双按钮 */
+.edit-popover-actions { display: flex; gap: 8px; }
+
+/* 修改遮罩里的预估时间 */
+.patch-eta { font-size: 12px; color: var(--ink-2); margin-top: 4px; }
+
+/* 方案推荐的平台能力 */
+.svc-rec-badge {
+  display: inline-block; margin-left: 6px; font-size: 10.5px; font-weight: 600;
+  background: rgba(46, 125, 91, 0.12); color: var(--ok);
+  border-radius: 5px; padding: 1px 6px; vertical-align: 1px;
+}
+.svc-rec-reason { display: block; font-size: 12px; color: var(--ok); margin-top: 3px; }
+
+/* 方案确认按钮旁的预估说明 */
+.spec-confirm { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.spec-confirm-note { font-size: 11.5px; color: var(--ink-2); }
+
+/* 积分抽屉 */
+.credits-modal { max-width: 520px; max-height: 82vh; overflow-y: auto; }
+.credits-balance-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg); border-radius: 10px; padding: 12px 16px; margin-top: 10px;
+}
+.credits-balance { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.credits-balance-label { font-size: 12px; color: var(--ink-2); }
+.credits-promises { display: flex; flex-direction: column; gap: 3px; margin-top: 10px; font-size: 12.5px; color: var(--ok); }
+.credits-h4 { margin-top: 16px; margin-bottom: 6px; font-size: 13px; }
+.credits-rules { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.credits-rule {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 8px 12px; font-size: 12.5px;
+}
+.credits-rule + .credits-rule { border-top: 1px solid var(--line); }
+.credits-rule-label small { display: block; color: var(--ink-2); font-size: 11.5px; }
+.credits-rule-cost { white-space: nowrap; font-weight: 600; }
+.credits-rule-cost.free { color: var(--ok); }
+.credits-note { margin-top: 8px; font-size: 11.5px; color: var(--ink-2); }
+.credits-empty { font-size: 12.5px; color: var(--ink-2); }
+.credits-entries { display: flex; flex-direction: column; gap: 4px; }
+.credits-entry {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 7px 10px; border-radius: 8px; background: var(--bg); font-size: 12.5px;
+}
+.credits-entry-main { display: flex; flex-direction: column; min-width: 0; }
+.credits-entry-main em { font-style: normal; color: var(--ink-2); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.credits-entry-side { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+.credits-entry-side time { color: var(--ink-2); font-size: 11px; }
+.credits-cost { font-weight: 600; }
+.credits-failed { color: var(--accent-ink); font-size: 12px; }
+
+/* 失败弹层 */
+.fail-modal { max-width: 440px; }
+.fail-reason { margin-top: 10px; font-size: 13px; }
+.fail-kept {
+  margin-top: 8px; font-size: 12.5px; background: var(--bg);
+  border-radius: 8px; padding: 8px 10px;
+}
+.fail-kept em { font-style: normal; color: var(--ink-2); }
+.fail-note { margin-top: 8px; font-size: 12.5px; color: var(--ok); margin-bottom: 12px; }
+
+/* 发布：暂停访问 */
+.live-pill.paused { background: rgba(232, 182, 76, 0.22); color: #7a5c14; }
+.live-actions { margin-top: 10px; display: flex; gap: 8px; }

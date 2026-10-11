@@ -17,6 +17,7 @@ export default function SpecCard({
   onToggle,
   onConfirm,
   confirmLabel,
+  confirmNote,
   hint,
   services,
   onServiceToggle,
@@ -27,6 +28,7 @@ export default function SpecCard({
   onToggle: (id: string) => void;
   onConfirm: () => void;
   confirmLabel: string;
+  confirmNote?: string; // 确认按钮下方的预估消耗说明
   hint?: string;
   services?: ServicesState;
   onServiceToggle?: (id: string) => void;
@@ -40,6 +42,7 @@ export default function SpecCard({
   function renderService(s: PlatformServiceDef) {
     if (!services || !onServiceToggle) return null;
     const on = !!services.enabled[s.id];
+    const rec = spec.recommendedServices?.find((r) => r.id === s.id);
     return (
       <div key={s.id} className={`check-item svc ${on ? "on" : "off"}`}>
         <button
@@ -55,9 +58,11 @@ export default function SpecCard({
         <span className="check-text">
           <span className="check-label">
             {s.icon} {s.label}
+            {rec && <span className="svc-rec-badge">方案推荐</span>}
             {s.note && <span className="svc-note">{s.note}</span>}
           </span>
           <span className="check-desc">{s.desc}</span>
+          {rec && <span className="svc-rec-reason">推荐原因：{rec.reason}</span>}
           {on && s.id === "ai" && onAiModelChange && (
             <label className="svc-model" onClick={(e) => e.stopPropagation()}>
               模型：
@@ -175,9 +180,12 @@ export default function SpecCard({
 
       <div className="spec-foot">
         <p className="spec-hint">{hint || "对方案不满意？直接在左侧对话里告诉产品经理，TA 会更新方案。"}</p>
-        <button className="btn primary big" onClick={onConfirm}>
-          {confirmLabel}
-        </button>
+        <div className="spec-confirm">
+          <button className="btn primary big" onClick={onConfirm}>
+            {confirmLabel}
+          </button>
+          {confirmNote && <span className="spec-confirm-note">{confirmNote}</span>}
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import type { ChatMessage, Spec, StyleOption, Suggestion } from "./types";
+import type { ChatMessage, QaReport, Spec, StyleOption, Suggestion } from "./types";
 
 /** 演示模式：一键载入的 mock 数据，无需 API Key 即可体验完整预览效果。 */
 
@@ -77,6 +77,25 @@ export const DEMO_SUGGESTIONS: Suggestion[] = [
   { label: "本周成绩导出成图片", instruction: "增加一个「晒成绩」按钮，把本周柱状图和连续达标天数渲染成一张可下载的分享图片。" },
   { label: "夜间深色模式", instruction: "增加浅色/深色主题切换，跟随系统偏好，保持现有配色气质。" },
 ];
+
+/** 演示用体检报告（ts 在载入时填充） */
+export const DEMO_QA: Omit<QaReport, "ts"> = {
+  summary: "整体可用、体验流畅，有 2 处小问题建议修复。",
+  issues: [
+    {
+      title: "手机上「本周回顾」柱状图略微超出屏幕",
+      detail: "在窄屏（375px 以下）查看时，周日的柱子会被裁掉一部分，需要左右滑动才能看全。",
+      severity: "medium",
+      fix: "让本周回顾的柱状图容器在窄屏下自动压缩柱宽或允许横向滚动，确保 7 天都完整可见。",
+    },
+    {
+      title: "撤销打卡后进度环动画偶尔跳动",
+      detail: "连续快速点「撤销」时，进度环的数字和圆环动画会短暂不同步。",
+      severity: "low",
+      fix: "撤销打卡时让进度环数字与圆环动画同步更新，避免快速连点时出现跳动。",
+    },
+  ],
+};
 
 export const DEMO_HTML = `<!DOCTYPE html>
 <html lang="zh-CN">

@@ -66,6 +66,10 @@ export function parseProposal(text: string): Spec | null {
     if (!spec.productName || !Array.isArray(spec.modules)) return null;
     if (!Array.isArray(spec.checklist)) spec.checklist = [];
     if (!Array.isArray(spec.scenarios)) spec.scenarios = [];
+    if (!Array.isArray(spec.recommendedServices)) spec.recommendedServices = [];
+    spec.recommendedServices = spec.recommendedServices.filter(
+      (r) => r && typeof r.id === "string" && typeof r.reason === "string"
+    );
     return spec;
   } catch {
     return null;

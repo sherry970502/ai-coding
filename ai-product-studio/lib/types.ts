@@ -17,6 +17,12 @@ export interface ChecklistItem {
   enabled?: boolean; // 用户确认后的最终状态
 }
 
+/** 方案推荐开启的平台能力（PM 在方案中给出，确认方案时自动开启） */
+export interface RecommendedService {
+  id: string; // PLATFORM_SERVICES 的 id
+  reason: string; // 用大白话说明为什么这个产品需要它
+}
+
 export interface Spec {
   productName: string;
   tagline: string;
@@ -25,6 +31,7 @@ export interface Spec {
   scenarios: string[];
   modules: SpecModule[];
   checklist: ChecklistItem[];
+  recommendedServices?: RecommendedService[];
 }
 
 export interface StylePalette {
@@ -80,9 +87,23 @@ export interface ServicesState {
   aiModel: string; // AI 能力选择的模型，"auto" 表示交给系统
 }
 
+/** 产品体检发现的问题 */
+export interface QaIssue {
+  title: string; // 一句话问题描述
+  detail: string; // 具体表现与位置
+  severity: "high" | "medium" | "low";
+  fix: string; // 可直接执行的修复指令
+}
+
+export interface QaReport {
+  issues: QaIssue[];
+  summary: string; // 一句话总体评价
+  ts: number;
+}
+
 /** 项目的发布状态（草稿与线上分离：versions 是草稿流，publish 记录线上版） */
 export interface PublishState {
-  status: "unpublished" | "live";
+  status: "unpublished" | "live" | "paused";
   url: string | null; // 线上访问链接（Web / H5 共用）
   liveVersionTs: number | null; // 线上版本对应 versions[].ts
   liveVersionLabel: string;
