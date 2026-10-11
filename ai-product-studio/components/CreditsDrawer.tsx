@@ -2,13 +2,14 @@
 
 import { COST_ESTIMATE, COST_LABEL, type CreditsState } from "@/lib/credits";
 
+// 按消耗从高到低排列，免费项归在最后
 const RULES: { label: string; cost: string; note?: string }[] = [
-  { label: "与产品经理对话 / 迭代建议", cost: "免费" },
-  { label: COST_LABEL.styles, cost: `~${COST_ESTIMATE.styles} 积分 / 次` },
   { label: COST_LABEL.build, cost: `~${COST_ESTIMATE.build} 积分 / 次`, note: "首次制作、更换视觉方向" },
   { label: COST_LABEL.revise, cost: `~${COST_ESTIMATE.revise} 积分 / 次`, note: "按新方案在现有产品上改" },
   { label: COST_LABEL.patch, cost: `~${COST_ESTIMATE.patch} 积分 / 次`, note: "点选修改、小调整；多处小改可合并成一次" },
+  { label: COST_LABEL.styles, cost: `~${COST_ESTIMATE.styles} 积分 / 次` },
   { label: COST_LABEL.qa, cost: `~${COST_ESTIMATE.qa} 积分 / 次` },
+  { label: "与产品经理对话 / 迭代建议", cost: "免费" },
   { label: "直接改文字（点选后输入新文字）", cost: "免费" },
 ];
 
