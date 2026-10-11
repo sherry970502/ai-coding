@@ -1,0 +1,418 @@
+<title>造物工坊 v0.3 交接</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700&display=swap">
+<style>
+  :root {
+    --bg: #F4F2EC;
+    --surface: #FFFFFF;
+    --surface-2: #EDE9DE;
+    --ink: #23211C;
+    --muted: #6C675C;
+    --line: #E2DDD0;
+    --primary: #29435C;
+    --primary-tint: rgba(41, 67, 92, 0.07);
+    --accent: #C0532F;
+    --ok: #2E7D5B;
+    --ok-bg: rgba(46, 125, 91, 0.12);
+    --warn: #8A6410;
+    --warn-bg: rgba(201, 154, 46, 0.16);
+    --code-bg: #EFEBE0;
+    --code-ink: #3A372F;
+    --serif: "Noto Serif SC", "Songti SC", "SimSun", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1E1C18;
+      --surface: #26231E;
+      --surface-2: #2D2A24;
+      --ink: #EAE6DB;
+      --muted: #A39C8D;
+      --line: #3A362E;
+      --primary: #8FB0CF;
+      --primary-tint: rgba(143, 176, 207, 0.09);
+      --accent: #E07B55;
+      --ok: #63B98F;
+      --ok-bg: rgba(99, 185, 143, 0.14);
+      --warn: #D9AE4F;
+      --warn-bg: rgba(217, 174, 79, 0.14);
+      --code-bg: #15130F;
+      --code-ink: #D8D3C6;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1E1C18;
+    --surface: #26231E;
+    --surface-2: #2D2A24;
+    --ink: #EAE6DB;
+    --muted: #A39C8D;
+    --line: #3A362E;
+    --primary: #8FB0CF;
+    --primary-tint: rgba(143, 176, 207, 0.09);
+    --accent: #E07B55;
+    --ok: #63B98F;
+    --ok-bg: rgba(99, 185, 143, 0.14);
+    --warn: #D9AE4F;
+    --warn-bg: rgba(217, 174, 79, 0.14);
+    --code-bg: #15130F;
+    --code-ink: #D8D3C6;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.75;
+    margin: 0;
+    padding-block: 0 72px;
+    padding-inline: 20px;
+  }
+  .doc { max-width: 860px; margin: 0 auto; }
+
+  /* ---------- 头部 ---------- */
+  header { padding-block: 44px 8px; border-bottom: 2px solid var(--ink); margin-bottom: 8px; }
+  .eyebrow {
+    font-size: 12.5px; letter-spacing: 0.12em; color: var(--muted);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .eyebrow .mark { color: var(--accent); font-size: 14px; }
+  h1 {
+    font-family: var(--serif); font-weight: 700; font-size: clamp(26px, 4.6vw, 38px);
+    line-height: 1.3; margin: 10px 0 6px; text-wrap: balance;
+  }
+  .subtitle { color: var(--muted); font-size: 15px; margin: 0 0 18px; }
+  .meta {
+    display: flex; flex-wrap: wrap; gap: 8px 18px; padding-block: 14px 18px;
+    border-top: 1px solid var(--line); font-size: 13px; color: var(--muted);
+  }
+  .meta b { color: var(--ink); font-weight: 600; }
+  .meta code { font-size: 12px; }
+
+  /* ---------- 章节 ---------- */
+  section { margin-top: 44px; }
+  h2 {
+    font-family: var(--serif); font-weight: 700; font-size: 21px; line-height: 1.4;
+    margin: 0 0 4px; text-wrap: balance;
+  }
+  .sec-no {
+    display: block; font-family: var(--sans); font-weight: 600; font-size: 12px;
+    letter-spacing: 0.14em; color: var(--accent); margin-bottom: 4px;
+  }
+  .lede { color: var(--muted); margin: 0 0 18px; max-width: 42em; }
+  h3 {
+    font-size: 16px; font-weight: 700; margin: 30px 0 8px; line-height: 1.5;
+  }
+  h3 .fno { color: var(--accent); font-family: var(--mono); font-size: 13px; margin-right: 8px; }
+  p { margin: 0 0 10px; max-width: 46em; }
+  ul, ol { margin: 0 0 12px; padding-left: 1.4em; }
+  li { margin-bottom: 5px; }
+  li::marker { color: var(--muted); }
+  strong { font-weight: 700; }
+  code {
+    font-family: var(--mono); font-size: 0.88em;
+    background: var(--surface-2); border-radius: 4px; padding: 1px 5px;
+  }
+  pre {
+    background: var(--code-bg); color: var(--code-ink);
+    border-radius: 8px; padding: 14px 16px; overflow-x: auto;
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.7; margin: 10px 0 18px;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  .cmt { opacity: 0.55; }
+
+  /* ---------- 表格 ---------- */
+  .tscroll { overflow-x: auto; margin: 14px 0 6px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+  th {
+    text-align: left; font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
+    color: var(--muted); padding: 7px 14px 7px 0; border-bottom: 1.5px solid var(--ink);
+    white-space: nowrap;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.65; }
+  td:last-child, th:last-child { padding-right: 0; }
+  tr:last-child td { border-bottom: none; }
+  td.num { color: var(--muted); font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+  td .q { color: var(--muted); }
+  table code { white-space: nowrap; }
+  td.wrapcode code { white-space: normal; word-break: break-all; }
+
+  /* ---------- 状态 chip ---------- */
+  .chip {
+    display: inline-block; font-size: 12px; font-weight: 600; line-height: 1.5;
+    border-radius: 99px; padding: 1px 10px; white-space: nowrap;
+  }
+  .chip.ok { background: var(--ok-bg); color: var(--ok); }
+  .chip.warn { background: var(--warn-bg); color: var(--warn); }
+  .chip.none { background: var(--surface-2); color: var(--muted); font-weight: 500; }
+
+  /* ---------- 功能详解的 交互/实现/验收 行 ---------- */
+  .kv { max-width: 46em; }
+  .kv b {
+    display: inline-block; font-size: 12px; font-weight: 600; color: var(--primary);
+    background: var(--primary-tint); border-radius: 4px; padding: 0 7px; margin-right: 7px;
+    letter-spacing: 0.05em;
+  }
+
+  /* ---------- 研发重点提亮块 ---------- */
+  .focus {
+    background: var(--primary-tint); border: 1px solid var(--line);
+    border-radius: 10px; padding: 20px 22px; margin-top: 16px;
+  }
+  .focus-tag {
+    display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.1em;
+    color: var(--accent); margin-bottom: 4px;
+  }
+
+  /* ---------- 痛点表的引文 ---------- */
+  .note { font-size: 13px; color: var(--muted); max-width: 46em; }
+
+  footer {
+    margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line);
+    font-size: 12.5px; color: var(--muted);
+  }
+
+  @media (max-width: 560px) {
+    body { font-size: 14.5px; }
+    header { padding-block: 28px 6px; }
+  }
+</style>
+
+<div class="doc">
+
+<header>
+  <p class="eyebrow"><span class="mark">◆</span> 造物工坊 · 研发交接文档</p>
+  <h1>v0.3 —— 透明、可控、能恢复</h1>
+  <p class="subtitle">依据 2026-10 用户反馈（47 条）完成的版本迭代，供研发团队判断范围、排期与接入真实后端。</p>
+  <div class="meta">
+    <span>仓库 <b>github.com/sherry970502/ai-coding</b>（项目在 <code>ai-product-studio/</code>，主分支 <code>main</code>）</span>
+    <span>本版提交 <code>4ae8f75</code> <code>9a294cc</code> <code>64fa60f</code></span>
+    <span>配套 <code>docs/feedback-2026-10.md</code> · <code>docs/release-v0.3.md</code> · <code>docs/handover-v0.3.md</code>（本文档源）</span>
+  </div>
+</header>
+
+<!-- ================= 一、版本概述 ================= -->
+<section>
+  <span class="sec-no">第一节</span>
+  <h2>版本概述</h2>
+  <p class="lede">来源是 2026-10 用户反馈收集表（47 条，9 位反馈人）。归纳后三大痛点高度集中，构成本版主题。</p>
+  <div class="tscroll">
+    <table>
+      <tr><th>痛点</th><th>反馈条数</th><th>典型原话</th></tr>
+      <tr><td><strong>等待不透明</strong></td><td class="num">7</td><td class="q">"迭代等待时间太久""开发过程无反馈、无进度提示""建议给出预估等待时间"</td></tr>
+      <tr><td><strong>消耗不透明</strong></td><td class="num">5</td><td class="q">"构建失败 token 也被计入，很奇怪""改几个字也要走一次完整构建，双倍消耗"</td></tr>
+      <tr><td><strong>失败救不回</strong></td><td class="num">8</td><td class="q">"生成失败不知道原因只能重试""输入框内容没保存，还得重新输一遍"</td></tr>
+    </table>
+  </div>
+  <p class="note">其余六类：版本回退不可见、需求输入弱（传文档 / 竞品参考 / 批量需求）、平台能力无引导、成品质量问题（13 条 UI 缺陷）、无下线入口、想选高阶模型。产品原则不变：技术不可见、交互完整、mock 先行；第四节明确每一处 mock 与真实实现的边界。</p>
+</section>
+
+<!-- ================= 二、改动点总览 ================= -->
+<section>
+  <span class="sec-no">第二节</span>
+  <h2>改动点总览（9 项）</h2>
+  <div class="tscroll">
+    <table>
+      <tr><th>#</th><th>改动点</th><th>对应反馈</th><th>前端状态</th><th>需要后端的部分</th></tr>
+      <tr><td class="num">1</td><td>积分账本与计费透明</td><td>失败也扣费 / 事前不知消耗</td><td><span class="chip ok">✓ 完整</span></td><td>真实 token 计量与结算</td></tr>
+      <tr><td class="num">2</td><td>进度与预估时长</td><td>等待无反馈 ×7</td><td><span class="chip ok">✓ 完整</span></td><td>按需求规模出服务端预估</td></tr>
+      <tr><td class="num">3</td><td>失败弹层 + 一键重试</td><td>失败无原因 / 输入丢失</td><td><span class="chip ok">✓ 完整</span></td><td>断点续作（保存生成现场）</td></tr>
+      <tr><td class="num">4</td><td>修改清单（多处小改合并计费）</td><td>改几个字双倍消耗</td><td><span class="chip ok">✓ 完整</span></td><td><span class="chip none">无（提示词层已实现）</span></td></tr>
+      <tr><td class="num">5</td><td>产品体检 + 一键修复</td><td>成品 UI 缺陷 13 条</td><td><span class="chip ok">✓ 完整</span></td><td>可选：无头浏览器真实快照</td></tr>
+      <tr><td class="num">6</td><td>版本「⟲ 恢复」显性化</td><td>无法回退版本</td><td><span class="chip ok">✓ 完整</span></td><td><span class="chip none">无</span></td></tr>
+      <tr><td class="num">7</td><td>对话附件 / 竞品参考 / 批量需求逐条确认</td><td>输入增强 ×4</td><td><span class="chip ok">✓ 完整</span></td><td>PDF / Word / OCR 解析服务</td></tr>
+      <tr><td class="num">8</td><td>平台能力自动开通（方案推荐 + 原因）</td><td>能力词出现但没帮我选上</td><td><span class="chip ok">✓ 完整</span></td><td><span class="chip none">无</span></td></tr>
+      <tr><td class="num">9</td><td>发布页暂停 / 恢复访问</td><td>只能删项目</td><td><span class="chip ok">✓ 完整</span></td><td>网关层访问开关</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ================= 三、功能详解 ================= -->
+<section>
+  <span class="sec-no">第三节</span>
+  <h2>功能详解与验收标准</h2>
+
+  <h3><span class="fno">01</span>积分账本与计费透明</h3>
+  <p class="kv"><b>交互</b>顶栏常驻「⚡ 余额」；抽屉三块——余额与领取入口、三条承诺（事前可见预估 / 失败不扣 / 实际与预估差 ≤40%）、计费规则表 + 消耗明细流水。规则表按消耗从高到低排列（整体制作 ~40 → 方案改造 ~30 → 快速修改 ~8 → 视觉方向 ~5 → 体检 ~2），免费项（对话、直接改文字）归在最后。</p>
+  <p class="kv"><b>实现</b>仅在操作成功后记账；失败记一笔 <code>cost: 0, status: "failed"</code> 流水，明细中显示「失败 · 未扣除」。实际消耗按产出字符数在预估 ±40% 内浮动（<code>scale = clamp(outputChars/30000, 0.6, 1.4)</code>）。</p>
+  <p class="kv"><b>验收</b>任何会扣分的按钮附近可见预估；触发一次失败后明细出现未扣除记录且余额不变。</p>
+
+  <h3><span class="fno">02</span>进度与预估时长</h3>
+  <p class="kv"><b>交互</b>制作页：预估剩余时间倒计时 + 阶段文案 + 本次预估消耗与"失败不扣"承诺；快速修改遮罩同样显示预估剩余时间。</p>
+  <p class="kv"><b>实现</b>进度条取「时间进度」与「生成字符数进度」较大者，封顶 96%。预估来源 <code>aps.durations.v1</code>：每类操作最近 5 次真实耗时取均值；无历史用默认值（build 90s / revise 75s / patch 35s / styles 20s / qa 15s）。</p>
+  <p class="kv"><b>验收</b>第二次同类操作的预估应接近第一次的真实耗时。</p>
+
+  <h3><span class="fno">03</span>失败可诊断、可恢复</h3>
+  <p class="kv"><b>交互</b>构建 / 修改失败弹层——失败原因、保留的修改要求原文、「↻ 原样重试」、"未扣积分"明示。</p>
+  <p class="kv"><b>实现</b><code>Studio</code> 内 <code>BuildFailure</code> 保存完整现场（mode / spec / style / baseHtml / instruction / element / label），重试即原参重跑。</p>
+  <p class="kv"><b>验收</b>失败后无需重新输入任何内容即可重试；失败不产生扣费流水。</p>
+
+  <h3><span class="fno">04</span>修改清单</h3>
+  <p class="kv"><b>交互</b>编辑模式点选元素 → 输入修改要求 → 「＋加入清单」（可攒多处）→ 顶部清单条「一次改完 N 处（~8 积分）」。</p>
+  <p class="kv"><b>实现</b>多条指令拼成「修改点 1/2/3…」一次 patch 请求；<code>ENGINEER_SYSTEM</code> 增加约束：逐条执行、互不影响、严格按字面、不顺手重构。</p>
+  <p class="kv"><b>验收</b>N 处修改只产生一笔 patch 费用、一个新版本。</p>
+
+  <h3><span class="fno">05</span>产品体检</h3>
+  <p class="kv"><b>交互</b>预览工具栏「🩺 体检」→ 报告面板（一句话总评 + 问题列表：严重程度 / 标题 / 大白话表现）→ 单条「修复」或「一键修复全部」（合并为一次 patch 计费）。</p>
+  <p class="kv"><b>实现</b>新接口 <code>POST /api/qa</code>（见第六节）；<code>QA_SYSTEM</code> 检查清单直接取自真实用户报障：文字重叠遮挡、点不动的按钮 / 红点、空壳入口、图表异常、JS 运行错误、乱码占位文案、手机适配。</p>
+  <p class="kv"><b>验收</b>对一个故意有重叠文字的 HTML 能报出问题并给出可执行修复指令。</p>
+
+  <h3><span class="fno">06</span>版本恢复</h3>
+  <p class="kv"><b>交互</b>历史菜单每个旧版本行尾「⟲ 恢复」（把旧版推为新的最新版，免费，历史不丢）；查看旧版本时顶部黄色横幅「正在查看 vN（不是最新版本）· 恢复这个版本 / 回到最新」。</p>
+  <p class="kv"><b>验收</b>恢复后版本数 +1、标签为「恢复自 vN」；原最新版仍在历史里。</p>
+
+  <h3><span class="fno">07</span>需求输入增强</h3>
+  <p class="kv"><b>交互</b>📎 附件支持 txt / md / csv / json（≤5 万字读入全文随消息发送，展示折叠为「📎 已附上《文件名》」）；PDF / Word / 图片选择后提示"识别支持中，请先粘贴文字"。附件全文包裹在 <code>【附件：文件名】…【附件结束】</code> 中进入对话上下文。</p>
+  <p class="kv"><b>实现</b>PM 提示词：参考材料 / 竞品要点提取并点明"参考了你提供的 XX"；批量需求先逐条编号复述（采纳 / 调整 / 暂不做）再出整体方案。</p>
+  <p class="kv"><b>验收</b>上传 md 文件后 PM 回复能引用文内要点；一次发 5 条需求能得到逐条回应。</p>
+
+  <h3><span class="fno">08</span>平台能力自动开通</h3>
+  <p class="kv"><b>协议</b>PM 方案 JSON 新增 <code>recommendedServices: [{id, reason}]</code>（0~3 项，id 限 12 项平台能力）。</p>
+  <p class="kv"><b>交互</b>确认方案时自动开通（依赖联动：auth→cloud，collab→auth+cloud），toast 告知；方案卡能力行显示绿色「方案推荐」徽标 + 推荐原因。</p>
+  <p class="kv"><b>验收</b>方案提到"云端同步"时，确认后云端数据自动开启且显示原因；用户仍可手动关闭。</p>
+
+  <h3><span class="fno">09</span>发布：暂停访问</h3>
+  <p class="kv"><b>协议</b><code>PublishState.status</code> 增加 <code>"paused"</code>。</p>
+  <p class="kv"><b>交互</b>已上线产品的线上状态卡新增「⏸ 暂停访问」；暂停后状态徽标变黄「⏸ 已暂停访问」，文案说明"项目、数据、链接都保留"，可「▶ 恢复访问」。</p>
+  <p class="kv"><b>验收</b>暂停 / 恢复往返状态与文案一致；暂停不清除 url / liveVersion 等任何字段。</p>
+
+  <h3>其他小项</h3>
+  <ul>
+    <li>设计师提示词：三个视觉方向的说明需帮助选择（"适合谁 / 什么场合"）。</li>
+    <li>工程师提示词：颜色 / 样式修改按字面精确执行（回应"调颜色多次解读出错"）。</li>
+    <li>模型档位：设置里已有三档模型；计费规则文案写明"更强模型消耗更高"。</li>
+  </ul>
+</section>
+
+<!-- ================= 四、Mock 边界 ================= -->
+<section>
+  <span class="sec-no">第四节</span>
+  <h2>Mock 与真实实现边界</h2>
+  <div class="focus">
+    <span class="focus-tag">研发重点</span>
+    <div class="tscroll">
+      <table>
+        <tr><th>模块</th><th>当前 mock 实现</th><th>真实实现要点</th></tr>
+        <tr><td><strong>积分账本</strong></td><td><code>aps.credits.v1</code>（localStorage），初始 500，前端记账</td><td>后端按真实 token 结算，前端只展示。<strong>规则数值（40/30/8/5/2）需按真实模型成本标定</strong>；「±40%」承诺需按真实数据回测</td></tr>
+        <tr><td><strong>预估时长</strong></td><td>本机最近 5 次耗时均值</td><td>服务端按需求规模（prompt 长度、模块数）给预估，跨设备一致</td></tr>
+        <tr><td><strong>失败重试</strong></td><td>整次原参重跑</td><td>断点续作：服务端保存生成现场，从中断 token 处续写（v0.4 核心，直接回应"中断后重复消耗"）</td></tr>
+        <tr><td><strong>产品体检</strong></td><td>模型静态读 HTML</td><td>可叠加无头浏览器跑真实渲染快照 + 控制台错误采集</td></tr>
+        <tr><td><strong>附件</strong></td><td>纯文本直接进上下文</td><td>文档解析服务（PDF / Word / OCR）+ 超长文档后端摘要</td></tr>
+        <tr><td><strong>暂停访问</strong></td><td>前端状态字段</td><td>网关层访问开关 + 暂停提示页；工作台仪表盘对 paused 项目需补状态徽标</td></tr>
+        <tr><td><strong>发布 / 打包 / 小程序</strong></td><td>v0.2 既有 mock，未变</td><td>见 <code>docs/shipping.md</code>、<code>docs/miniprogram.md</code></td></tr>
+        <tr><td><strong>演示模式</strong></td><td><code>ProjectData.demo = true</code> 的项目，AI 环节全部本地模拟（第七节）</td><td>上线后保留，作为新用户零成本试玩通道</td></tr>
+      </table>
+    </div>
+    <p class="note" style="margin-top:10px;"><strong>明确不做</strong>（已对用户说明）：小程序真机预览——微信审核机制限制，反馈表备注已确认无解。</p>
+  </div>
+</section>
+
+<!-- ================= 五、文件清单 ================= -->
+<section>
+  <span class="sec-no">第五节</span>
+  <h2>完整文件清单</h2>
+  <p class="lede">完整 diff 以仓库提交 <code>4ae8f75</code> / <code>9a294cc</code> / <code>64fa60f</code> 为准；下表为每个文件的职责与改动内容。</p>
+
+  <h3>新增文件（5 个）</h3>
+  <div class="tscroll">
+    <table>
+      <tr><th>文件</th><th>职责</th></tr>
+      <tr><td><code>lib/credits.ts</code></td><td>积分账本 + 耗时统计。导出：<code>COST_ESTIMATE / COST_LABEL</code>（规则常量）、<code>loadCredits / chargeCredits / recordFailure / topUpCredits / seedDemoLedger</code>（账本）、<code>recordDuration / estimateDuration / formatDuration</code>（时长）。存储 key：<code>aps.credits.v1</code>、<code>aps.durations.v1</code></td></tr>
+      <tr><td><code>components/CreditsDrawer.tsx</code></td><td>积分抽屉：余额、三条承诺、计费规则表（高→低，免费垫底）、消耗明细</td></tr>
+      <tr><td><code>app/api/qa/route.ts</code></td><td>产品体检接口：输入 <code>{html, spec, model?}</code>，JSON Schema 约束输出 <code>{summary, issues[]}</code></td></tr>
+      <tr><td><code>docs/feedback-2026-10.md</code></td><td>47 条反馈逐条归纳 → 9 类需求 → v0.3 响应映射</td></tr>
+      <tr><td><code>docs/release-v0.3.md</code></td><td>版本说明（面向内部）</td></tr>
+    </table>
+  </div>
+
+  <h3>修改文件（11 个）</h3>
+  <div class="tscroll">
+    <table>
+      <tr><th>文件</th><th>改动内容</th></tr>
+      <tr><td><code>lib/types.ts</code></td><td><code>Spec</code> 增 <code>recommendedServices?</code>；新增 <code>QaIssue / QaReport</code>；<code>PublishState.status</code> 增 <code>"paused"</code></td></tr>
+      <tr><td><code>lib/prompts.ts</code></td><td><code>PM_SYSTEM</code>：附件 / 竞品参考、批量需求逐条复述、<code>recommendedServices</code> 输出规则；<code>ENGINEER_SYSTEM</code>：按字面修改、多修改点逐条执行；<code>DESIGNER_SYSTEM</code>：方向说明帮助选择；新增 <code>QA_SYSTEM</code></td></tr>
+      <tr><td><code>lib/client.ts</code></td><td><code>parseProposal</code> 对 <code>recommendedServices</code> 的容错清洗</td></tr>
+      <tr><td><code>lib/projects.ts</code></td><td><code>ProjectData</code> 增 <code>demo?: boolean</code>（演示项目标记，刷新后保持）</td></tr>
+      <tr><td><code>lib/demo.ts</code></td><td><code>DEMO_SPEC</code> 增推荐能力；新增 <code>DEMO_QA</code>（演示体检报告）、<code>injectDemoChange()</code>（演示修改回执条，重复修改替换不叠加）</td></tr>
+      <tr><td><code>components/Studio.tsx</code></td><td>核心接线：积分状态与顶栏入口、<code>BuildFailure</code> 失败现场与重试、<code>runQa / fixQaIssues</code>、<code>handleBatchEdit</code>、<code>restoreVersion</code>、<code>applyRecommendedServices</code>、演示模式模拟引擎（对话流式 / 构建 / 体检，含「失败」关键词触发一次模拟失败）</td></tr>
+      <tr><td><code>components/BuildProgress.tsx</code></td><td>预估剩余时间倒计时 + 阶段 + 费用承诺；进度 = max(时间进度, 字符进度)</td></tr>
+      <tr><td><code>components/PreviewPane.tsx</code></td><td>体检按钮与报告面板、修改清单（<code>PendingEdit</code> 队列）、历史菜单「⟲ 恢复」与旧版本横幅、<code>PatchOverlay</code> 预估时间、编辑面板双按钮（立即修改 / 加入清单）、各处消耗预估提示</td></tr>
+      <tr><td><code>components/SpecCard.tsx</code></td><td>「方案推荐」徽标 + 原因；<code>confirmNote</code>（确认按钮下预估消耗 / 时长说明）</td></tr>
+      <tr><td><code>components/PublishPanel.tsx</code></td><td><code>pauseAccess / resumeAccess</code>、paused 状态徽标与文案</td></tr>
+      <tr><td><code>components/ChatPanel.tsx</code> · <code>app/globals.css</code></td><td>📎 附件（格式白名单、5 万字截断、非文本格式诚实提示）、附件 chip 展示；CSS 末尾 v0.3 注释块（积分抽屉 / 体检面板 / 修改清单 / 旧版本横幅 / 失败弹层 / 暂停徽标等全部新增样式）</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ================= 六、接口与数据结构 ================= -->
+<section>
+  <span class="sec-no">第六节</span>
+  <h2>接口与数据结构变更</h2>
+
+  <h3>新增接口 <code>POST /api/qa</code></h3>
+<pre><code><span class="cmt">// 请求</span>
+{ "html": "&lt;!DOCTYPE html&gt;…", "spec": { /* Spec */ }, "model": "claude-opus-4-8" }
+
+<span class="cmt">// 响应（JSON Schema 强约束）</span>
+{
+  "summary": "整体可用，有 2 处显示问题建议修复",
+  "issues": [
+    { "title": "…", "detail": "…", "severity": "high|medium|low", "fix": "给工程师的修复指令" }
+  ]
+}</code></pre>
+  <p>鉴权与其余接口一致：<code>x-aps-key</code> 请求头可覆盖服务端 <code>ANTHROPIC_API_KEY</code>。</p>
+
+  <h3>PM 方案 JSON 协议新增字段</h3>
+<pre><code>"recommendedServices": [{ "id": "cloud", "reason": "换设备打开记录不丢" }]
+<span class="cmt">// id 限定 12 项平台能力；0~3 项；前端 parseProposal 做容错清洗</span></code></pre>
+
+  <h3>localStorage 新增 key</h3>
+  <div class="tscroll">
+    <table>
+      <tr><th>key</th><th>内容</th></tr>
+      <tr><td><code>aps.credits.v1</code></td><td><code>{balance, entries[≤60]}</code> 积分账本（全局，跨项目）</td></tr>
+      <tr><td><code>aps.durations.v1</code></td><td><code>{kind: ms[≤5]}</code> 各操作最近耗时</td></tr>
+    </table>
+  </div>
+  <p style="margin-top:10px;"><code>ProjectData</code> 新增 <code>demo?: boolean</code>；旧项目数据无需迁移（字段缺省即非演示）。</p>
+</section>
+
+<!-- ================= 七、演示模式 ================= -->
+<section>
+  <span class="sec-no">第七节</span>
+  <h2>演示模式：无需 API Key 的完整试玩通道</h2>
+  <p class="lede">入口：新建项目 → 「▶ 先看一个演示成品」。载入后 <code>demo: true</code> 持久化，刷新保持。</p>
+  <div class="tscroll">
+    <table>
+      <tr><th>环节</th><th>模拟行为</th></tr>
+      <tr><td>对话</td><td>产品经理流式回复（附件消息会点明已读取文件名）</td></tr>
+      <tr><td>制作 / 修改</td><td>本地模拟进度（整体 6s / 快改 3.8s），完成后在成品底部盖「✔ 演示修改已应用」回执条（重复修改替换不叠加），照常记账</td></tr>
+      <tr><td>失败恢复</td><td>修改要求含「失败」二字 → 第一次模拟中断（弹层 + 不扣费流水），重试即成功</td></tr>
+      <tr><td>体检</td><td>1.6s 后返回预置报告 <code>DEMO_QA</code></td></tr>
+      <tr><td>预置数据</td><td>3 个历史版本（试「恢复」）、种子积分流水（含一笔「失败 · 未扣除」）、方案卡预置 2 项「方案推荐」能力</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ================= 八、验证与 v0.4 ================= -->
+<section>
+  <span class="sec-no">第八节</span>
+  <h2>验证情况与已知限制</h2>
+  <p><strong>已验证</strong>：<code>tsc --noEmit</code>、<code>next build</code> 通过；本地 <code>next start</code> 冒烟（首页 / 项目页 200，<code>/api/qa</code> 链路通，错误路径文案可读）；演示模式全流程手测。</p>
+  <p><strong>未验证</strong>：真实 API 生成链路（开发机凭证限制）。请在配置正常 <code>ANTHROPIC_API_KEY</code> 的环境回归：PM 对话出方案（含 recommendedServices）、体检真实报告质量、多修改点合并执行的准确率。</p>
+  <h3>已知限制 / 建议 v0.4</h3>
+  <ol>
+    <li><strong>断点续作</strong>——失败重试 = 整次重跑；后端保存生成现场后可从中断处续写（用户痛点原文："中断后无法继续且重复消耗 tokens"）</li>
+    <li>积分规则数值需按真实 token 成本标定</li>
+    <li>工作台仪表盘未显示 paused 状态徽标</li>
+    <li>PDF / Word / 图片附件解析</li>
+    <li>体检叠加无头浏览器真实渲染检查</li>
+    <li>多处修改合并后单点失败的部分成功处理（当前一损俱损）</li>
+  </ol>
+</section>
+
+<footer>
+  ◆ 造物工坊 · v0.3 研发交接 · 文档源在仓库 <code>docs/handover-v0.3.md</code>，与本页内容一致
+</footer>
+
+</div>
