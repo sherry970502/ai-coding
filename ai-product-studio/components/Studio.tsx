@@ -18,10 +18,12 @@ import {
   loadCredits,
   recordDuration,
   recordFailure,
+  seedDemoLedger,
   topUpCredits,
   type CostKind,
   type CreditsState,
 } from "@/lib/credits";
+import { injectDemoChange } from "@/lib/demo";
 import {
   extractHtml,
   parseProposal,
@@ -136,6 +138,10 @@ export default function Studio({ projectId }: { projectId: string }) {
   const [qaReport, setQaReport] = useState<QaReport | null>(null);
   const [qaLoading, setQaLoading] = useState(false);
 
+  // 演示模式：所有 AI 环节本地模拟，无需 API Key 即可完整体验 v0.3 的改动点
+  const [demoMode, setDemoMode] = useState(false);
+  const demoFailedOnce = useRef(false); // 含「失败」的修改要求第一次模拟失败，重试即成功
+
   // 阶段五：平台服务与发布
   const [services, setServices] = useState<ServicesState>(defaultServices);
   const [publish, setPublish] = useState<PublishState>(defaultPublish);
@@ -172,6 +178,7 @@ export default function Studio({ projectId }: { projectId: string }) {
     setServices(data.services);
     setPublish(data.publish);
     setStage(data.stage);
+    setDemoMode(!!data.demo);
     if (data.initialIdea && data.messages.length === 0) {
       initialIdeaRef.current = data.initialIdea;
     }
@@ -206,6 +213,7 @@ export default function Studio({ projectId }: { projectId: string }) {
         stage,
         services,
         publish,
+        demo: demoMode,
       });
       const meta = getMeta(projectId);
       if (meta) setProjectName(meta.name);
@@ -226,6 +234,7 @@ export default function Studio({ projectId }: { projectId: string }) {
     stage,
     services,
     publish,
+    demoMode,
   ]);
 
   // ---------- 基础工具 ----------
@@ -312,6 +321,22 @@ export default function Studio({ projectId }: { projectId: string }) {
     const history = [...messages, userMsg];
     setMessages([...history, { role: "assistant", content: "" }]);
     setChatBusy(true);
+    if (demoMode) {
+      // 演示：模拟产品经理流式回复（附件消息会点明已读取）
+      const attach = /【附件：(.+?)】/.exec(text);
+      const reply = attach
+        ? `收到！我看完了你附上的《${attach[1]}》，里面的要点我已经记下，会在下一版方案里融入。\n\n（演示模式：真实环境中我会据此更新产品方案；填入 API Key 即可体验完整对话。）`
+        : `明白，你的需求我记下了：「${text.slice(0, 40)}」。\n\n（演示模式：真实环境中我会据此调整方案或触发产品改造；填入 API Key 即可体验完整对话。）`;
+      let sofar = "";
+      for (const ch of reply) {
+        sofar += ch;
+        setMessages([...history, { role: "assistant", content: sofar }]);
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((r) => setTimeout(r, 12));
+      }
+      setChatBusy(false);
+      return;
+    }
     try {
       const full = await streamText(
         "/api/pm",
@@ -394,6 +419,10 @@ export default function Studio({ projectId }: { projectId: string }) {
   // ---------- 阶段二：视觉方向 ----------
 
   async function fetchStyles(forSpec: Spec, tweak: string) {
+    if (demoMode) {
+      showToast("演示模式：视觉方向为预置示例，填入 API Key 后可真实生成");
+      return;
+    }
     setStylesLoading(true);
     setStylesError(null);
     setStyleId(null);
@@ -450,6 +479,49 @@ export default function Studio({ projectId }: { projectId: string }) {
     const isFullBuild = mode !== "patch";
     const kind: CostKind = mode;
     const start = Date.now();
+
+    if (demoMode) {
+      // 演示：本地模拟整个构建过程（进度、计费、失败恢复都按真实逻辑走）
+      const willFail = instruction.includes("失败") && !demoFailedOnce.current;
+      setFailure(null);
+      if (isFullBuild) {
+        setStage("building");
+        setBuildChars(0);
+        setBuildEtaMs(6000);
+        setBuildCost(COST_ESTIMATE[kind]);
+      } else {
+        setPatching(true);
+        setPatchLabel(`正在修改：${label}`);
+        setPatchEtaMs(4000);
+      }
+      const tick = setInterval(() => setBuildChars((c) => c + 2200), 300);
+      await new Promise((r) => setTimeout(r, isFullBuild ? 6000 : 3800));
+      clearInterval(tick);
+      setPatching(false);
+      setPatchLabel("");
+      if (willFail) {
+        demoFailedOnce.current = true;
+        setCredits(recordFailure(kind, label));
+        if (isFullBuild) setStage(versions.length ? "preview" : "style");
+        setFailure({
+          reason: "（演示）模拟一次生成中断：网络连接在输出途中断开",
+          mode,
+          spec: forSpec,
+          style: forStyle,
+          baseHtml,
+          instruction,
+          element,
+          label,
+        });
+        return;
+      }
+      demoFailedOnce.current = false;
+      pushVersion(injectDemoChange(baseHtml || html, label), label);
+      setStage("preview");
+      setCredits(chargeCredits(kind, label, 28000));
+      return;
+    }
+
     if (isFullBuild) {
       setStage("building");
       setBuildChars(0);
@@ -559,6 +631,14 @@ export default function Studio({ projectId }: { projectId: string }) {
 
   async function runQa() {
     if (!spec || !html || qaLoading) return;
+    if (demoMode) {
+      setQaLoading(true);
+      await new Promise((r) => setTimeout(r, 1600));
+      setQaReport({ ...DEMO_QA, ts: Date.now() });
+      setCredits(chargeCredits("qa", `体检 v${currentVersion + 1}`));
+      setQaLoading(false);
+      return;
+    }
     setQaLoading(true);
     const start = Date.now();
     try {
@@ -636,6 +716,8 @@ export default function Studio({ projectId }: { projectId: string }) {
   // ---------- 演示模式 ----------
 
   function loadDemo() {
+    setDemoMode(true);
+    setCredits(seedDemoLedger());
     setMessages(DEMO_MESSAGES);
     setSpec(DEMO_SPEC);
     // 演示：预先勾选几项平台服务，便于展示发布阶段的完整形态
@@ -653,13 +735,19 @@ export default function Studio({ projectId }: { projectId: string }) {
     }));
     setStyles(DEMO_STYLES);
     setStyleId(DEMO_STYLE_ID);
-    setVersions([{ html: DEMO_HTML, label: "演示版本", ts: Date.now() }]);
-    setCurrentVersion(0);
+    // 预置三个版本：方便体验「历史 → ⟲ 恢复」与旧版本横幅
+    const now = Date.now();
+    setVersions([
+      { html: DEMO_HTML, label: "首个版本", ts: now - 40 * 60_000 },
+      { html: injectDemoChange(DEMO_HTML, "加入连续达标徽章"), label: "加入连续达标徽章", ts: now - 15 * 60_000 },
+      { html: injectDemoChange(DEMO_HTML, "优化手机端布局"), label: "优化手机端布局", ts: now },
+    ]);
+    setCurrentVersion(2);
     setSuggestions(DEMO_SUGGESTIONS);
     setSuggestLoading(false);
-    setQaReport({ ...DEMO_QA, ts: Date.now() });
+    setQaReport({ ...DEMO_QA, ts: now });
     setStage("preview");
-    showToast("已载入演示成品：试试「✎ 编辑模式」点击页面改文字，或切换手机视图");
+    showToast("演示已就绪：⚡ 看积分明细、🩺 看体检报告、✎ 编辑模式攒「修改清单」；修改要求里写「失败」两个字可体验失败恢复");
   }
 
   // ---------- 快捷键 ----------

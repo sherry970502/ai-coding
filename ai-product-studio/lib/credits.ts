@@ -98,6 +98,24 @@ export function recordFailure(kind: CostKind, label: string): CreditsState {
   return next;
 }
 
+/** 演示模式：账本还是空的时，预置几笔有代表性的流水（含一笔「失败 · 未扣除」）。 */
+export function seedDemoLedger(): CreditsState {
+  const state = loadCredits();
+  if (state.entries.length) return state;
+  const now = Date.now();
+  const entries: LedgerEntry[] = [
+    { ts: now - 3 * 60_000, kind: "qa", label: "体检 v3", cost: 2, status: "ok" },
+    { ts: now - 12 * 60_000, kind: "patch", label: "一次修改 2 处", cost: 8, status: "ok" },
+    { ts: now - 18 * 60_000, kind: "patch", label: "加一个周统计图表", cost: 0, status: "failed" },
+    { ts: now - 32 * 60_000, kind: "build", label: "首个版本", cost: 42, status: "ok" },
+    { ts: now - 35 * 60_000, kind: "styles", label: "三个视觉方向", cost: 5, status: "ok" },
+  ];
+  const spent = entries.reduce((a, e) => a + e.cost, 0);
+  const next: CreditsState = { balance: state.balance - spent, entries };
+  save(next);
+  return next;
+}
+
 /** 演示账本：领取体验积分。 */
 export function topUpCredits(amount = 500): CreditsState {
   const state = loadCredits();

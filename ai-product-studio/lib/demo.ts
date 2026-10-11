@@ -37,6 +37,11 @@ export const DEMO_SPEC: Spec = {
     { id: "offline", label: "离线可用", desc: "断网也能正常打卡", defaultOn: true, enabled: true },
     { id: "share-export", label: "分享导出", desc: "本周成绩可以保存下来分享给朋友", defaultOn: false, enabled: false },
   ],
+  // v0.3：方案推荐的平台能力（确认方案时自动开通，卡片上显示推荐原因）
+  recommendedServices: [
+    { id: "cloud", reason: "换手机、换电脑打开，打卡记录不会丢" },
+    { id: "notify", reason: "到点提醒喝水，习惯才养得成" },
+  ],
 };
 
 export const DEMO_STYLES: StyleOption[] = [
@@ -77,6 +82,23 @@ export const DEMO_SUGGESTIONS: Suggestion[] = [
   { label: "本周成绩导出成图片", instruction: "增加一个「晒成绩」按钮，把本周柱状图和连续达标天数渲染成一张可下载的分享图片。" },
   { label: "夜间深色模式", instruction: "增加浅色/深色主题切换，跟随系统偏好，保持现有配色气质。" },
 ];
+
+/** 演示模式：把一次"修改"可视化——在页面底部盖一个修改回执条（重复修改时替换而不是叠加）。 */
+const DEMO_CHANGE_MARK = "<!--aps-demo-change-->";
+export function injectDemoChange(html: string, label: string): string {
+  const safe = label.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const stripped = html.replace(
+    /<!--aps-demo-change-->[\s\S]*?<!--\/aps-demo-change-->/,
+    ""
+  );
+  const banner =
+    `${DEMO_CHANGE_MARK}<div style="position:fixed;left:50%;transform:translateX(-50%);bottom:18px;` +
+    `background:#1f6f78;color:#fff;padding:8px 18px;border-radius:99px;font-size:13px;z-index:9999;` +
+    `box-shadow:0 4px 16px rgba(0,0,0,.18);">✔ 演示修改已应用：${safe}</div><!--/aps-demo-change-->`;
+  return stripped.includes("</body>")
+    ? stripped.replace("</body>", banner + "</body>")
+    : stripped + banner;
+}
 
 /** 演示用体检报告（ts 在载入时填充） */
 export const DEMO_QA: Omit<QaReport, "ts"> = {

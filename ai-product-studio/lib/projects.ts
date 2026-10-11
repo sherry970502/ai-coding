@@ -36,6 +36,7 @@ export interface ProjectData {
   services: ServicesState; // 平台服务勾选（账号 / 云端数据 / AI / 积分钱包 / 统计）
   publish: PublishState; // 发布状态（草稿与线上分离）
   initialIdea?: string; // 新建项目时填的一句话想法，进入项目后自动发给产品经理
+  demo?: boolean; // 演示模式项目：AI 环节本地模拟，刷新后保持
 }
 
 export function defaultServices(): ServicesState {
